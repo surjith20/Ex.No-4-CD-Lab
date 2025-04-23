@@ -17,52 +17,62 @@ To write a YACC program to recognize a valid variable which starts with a letter
 ### EX4.l
 ```
 %{
-#include "y.tab.h"
+#include "ex4.tab.h"
+#include <stdio.h>
 %}
 
 %%
+"int"       { return INT; }
+"float"     { return FLOAT; }
+"double"    { return DOUBLE; }
 
-"int" { return INT; } 
-"float" { return FLOAT; }
-"double" { return DOUBLE; }
+[a-zA-Z_][a-zA-Z0-9_]*    { printf("Identifier: %s\n", yytext); return ID; }
 
-[a-zA-Z][a-zA-Z0-9]* {
-printf("\nIdentifier is %s", yytext); return ID;
-}
-
-. { return yytext[0]; }
-
-\n { return 0; }
-
+[ \t\n]+    ;       // Ignore whitespace
+.           { return yytext[0]; } // Return other characters (punctuation, etc.)
 %%
-
-int yywrap() 
-{ 
-return 1;
-}
+int yywrap() { return 1; }
 
 ```
 ### EX4.y
 ```
+
 %{
 #include <stdio.h>
-/* This YACC program is for recognizing the Expression */
+#include <stdlib.h>
+extern char *yytext; // Declare yytext to fix the undeclared error
+
+void yyerror(const char *s);
+int yylex(void);  // Declare yylex to use the lexer
 %}
 
 %token ID INT FLOAT DOUBLE
-%% D: T L;
-L: L ',' ID   | ID;
-
-T: INT | FLOAT | DOUBLE;
 
 %%
-extern FILE *yyin; int main() {
-do {
-yyparse();
-} while (!feof(yyin)); return 0;
+D: T L { printf("Valid declaration.\n"); }
+ ;
+
+L: L ',' ID
+ | ID
+ ;
+
+T: INT
+ | FLOAT
+ | DOUBLE
+ ;
+
+%%
+extern FILE *yyin;
+
+int main() {
+    printf("Enter declaration (e.g., int a,b):\n");
+    yyparse(); // Start parsing
+    return 0;
 }
 
-void yyerror(char *s) { 
+void yyerror(const char *s) {
+    fprintf(stderr, "Error: %s\n", s);
+    printf("Lexical error at token: %s\n", yytext);  // Debugging output
 }
 
 ```
